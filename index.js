@@ -6,25 +6,32 @@ const app = express();
 
 app.use(cors());
 
-// Ruta principal para que no tire error si alguien entra directo a la URL
 app.get("/", (req, res) => {
   res.send("El proxy de fútbol está activo y funcionando 🚀");
 });
 
-// ACA ESTA EL ARREGLO: Cambiamos /* por /:endpoint(.*)
-app.get("/api/football/:endpoint(.*)", async (req, res) => {
+app.use("/api/football", async (req, res) => {
   try {
-    // Ahora leemos la variable por el nombre que le pusimos arriba
-    const endpoint = req.params.endpoint;
+    const apiKey = process.env.API_SPORTS_KEY;
+
+    // DETECTOR: Si Vercel está ciego y no lee la variable, frenamos acá
+    if (!apiKey) {
+      return res.status(500).json({
+        error:
+          "EL PROXY NO ESTA LEYENDO LA CLAVE DE VERCEL. Revisar Environment Variables.",
+      });
+    }
+
+    const endpoint = req.url;
 
     const response = await axios({
-      method: "GET",
-      url: `https://v3.football.api-sports.io/${endpoint}`,
+      method: req.method,
+      url: `https://v3.football.api-sports.io${endpoint}`,
       headers: {
-        "x-apisports-key": process.env.API_SPORTS_KEY,
+        "x-apisports-key": apiKey,
+        "x-rapidapi-key": apiKey, // Por si tu cuenta viene de RapidAPI
         "x-apisports-host": "v3.football.api-sports.io",
       },
-      params: req.query,
     });
 
     res.json(response.data);
