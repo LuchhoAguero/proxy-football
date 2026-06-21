@@ -34,6 +34,15 @@ app.use("/api/football", async (req, res) => {
       },
     });
 
+    // Cache-Control: diferenciado según si el endpoint es de partidos en vivo o no.
+    // - Endpoints "live": caché corta (60s) porque los datos cambian frecuentemente.
+    // - Resto (fixtures por fecha, standings, etc.): caché de 1 hora.
+    const isLive = endpoint.includes("live") || endpoint.includes("fixture") && endpoint.includes("live");
+    const cacheControl = isLive
+      ? "s-maxage=60, stale-while-revalidate=300"
+      : "s-maxage=3600, stale-while-revalidate=86400";
+
+    res.set("Cache-Control", cacheControl);
     res.json(response.data);
   } catch (error) {
     console.error(error);
